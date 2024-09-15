@@ -1,7 +1,7 @@
 #
 #   This file is part of m.css.
 #
-#   Copyright © 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#   Copyright © 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,12 +25,17 @@
 
 import matplotlib
 import os
+import re
 import sys
 import unittest
 
-from distutils.version import LooseVersion
+from . import PelicanPluginTestCase, parse_version
 
-from . import PelicanPluginTestCase
+# Basically every matplotlib version causes the hashes to change, and 3.9.2 has
+# them also different on different machines. Yay software developers. Replace
+# them with a static string when comparing. The actual file is not changed in
+# order to make it possible to actually view it, it's only for the comparison.
+_normalize_hashes = re.compile('([mp])[0-9a-f]{10}')
 
 class Plots(PelicanPluginTestCase):
     def __init__(self, *args, **kwargs):
@@ -43,13 +48,21 @@ class Plots(PelicanPluginTestCase):
         })
 
         # FUCK this is annoying
-        if LooseVersion(matplotlib.__version__) >= LooseVersion('3.5'):
-            self.assertEqual(*self.actual_expected_contents('page.html'))
-        elif LooseVersion(matplotlib.__version__) >= LooseVersion('3.4'):
-            self.assertEqual(*self.actual_expected_contents('page.html', 'page-34.html'))
-        elif LooseVersion(matplotlib.__version__) >= LooseVersion('3.2'):
-            self.assertEqual(*self.actual_expected_contents('page.html', 'page-32.html'))
-        elif LooseVersion(matplotlib.__version__) >= LooseVersion('3.0'):
-            self.assertEqual(*self.actual_expected_contents('page.html', 'page-30.html'))
+        if parse_version(matplotlib.__version__) >= parse_version('3.6'):
+            # https://github.com/matplotlib/matplotlib/commit/1cf5a33b5b5fb07f8fd3956322b85efa0e307b18
+            file = 'page.html'
+        elif parse_version(matplotlib.__version__) >= parse_version('3.5'):
+            file = 'page-35.html'
+        elif parse_version(matplotlib.__version__) >= parse_version('3.2'):
+            file = 'page-32.html'
+        elif parse_version(matplotlib.__version__) >= parse_version('3.0'):
+            file = 'page-30.html'
         else:
-            self.assertEqual(*self.actual_expected_contents('page.html', 'page-22.html'))
+            file = 'page-22.html'
+
+        # The element hashes change wildly between versions, replace them with
+        # something stable before comparison
+        actual_contents, expected_contents = self.actual_expected_contents('page.html', file)
+        actual_contents = _normalize_hashes.sub(r'\1gggggggggg', actual_contents)
+        expected_contents = _normalize_hashes.sub(r'\1gggggggggg', expected_contents)
+        self.assertEqual(actual_contents, expected_contents)

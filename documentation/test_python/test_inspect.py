@@ -1,7 +1,7 @@
 #
 #   This file is part of m.css.
 #
-#   Copyright © 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#   Copyright © 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,10 +29,8 @@ import os
 import sys
 import unittest
 
-from distutils.version import LooseVersion
-
 from python import default_templates
-from . import BaseInspectTestCase
+from . import BaseInspectTestCase, parse_version
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../plugins'))
 import m.sphinx
@@ -48,8 +46,13 @@ class String(BaseInspectTestCase):
         self.assertEqual(*self.actual_expected_contents('inspect_string.another_module.html'))
         self.assertEqual(*self.actual_expected_contents('inspect_string.Foo.html'))
         self.assertEqual(*self.actual_expected_contents('inspect_string.FooSlots.html'))
-        self.assertEqual(*self.actual_expected_contents('inspect_string.DerivedException.html'))
         self.assertEqual(*self.actual_expected_contents('inspect_string.Specials.html'))
+
+        # Python 3.11 adds BaseException.add_note()
+        if sys.version_info >= (3, 11):
+            self.assertEqual(*self.actual_expected_contents('inspect_string.DerivedException.html'))
+        else:
+            self.assertEqual(*self.actual_expected_contents('inspect_string.DerivedException.html', 'inspect_string.DerivedException-310.html'))
 
         self.assertEqual(*self.actual_expected_contents('classes.html'))
         self.assertEqual(*self.actual_expected_contents('modules.html'))
@@ -72,7 +75,13 @@ class Object(BaseInspectTestCase):
         self.assertEqual(*self.actual_expected_contents('inspect_string.another_module.html', '../inspect_string/inspect_string.another_module.html'))
         self.assertEqual(*self.actual_expected_contents('inspect_string.Foo.html', '../inspect_string/inspect_string.Foo.html'))
         self.assertEqual(*self.actual_expected_contents('inspect_string.FooSlots.html', '../inspect_string/inspect_string.FooSlots.html'))
-        self.assertEqual(*self.actual_expected_contents('inspect_string.DerivedException.html', '../inspect_string/inspect_string.DerivedException.html'))
+
+        # Python 3.11 adds BaseException.add_note()
+        if sys.version_info >= (3, 11):
+            self.assertEqual(*self.actual_expected_contents('inspect_string.DerivedException.html', '../inspect_string/inspect_string.DerivedException.html'))
+        else:
+            self.assertEqual(*self.actual_expected_contents('inspect_string.DerivedException.html', '../inspect_string/inspect_string.DerivedException-310.html'))
+
         self.assertEqual(*self.actual_expected_contents('inspect_string.Specials.html', '../inspect_string/inspect_string.Specials.html'))
 
         self.assertEqual(*self.actual_expected_contents('classes.html', '../inspect_string/classes.html'))
@@ -86,7 +95,7 @@ class AllProperty(BaseInspectTestCase):
 class Annotations(BaseInspectTestCase):
     def test(self):
         self.run_python()
-        if LooseVersion(sys.version) >= LooseVersion('3.7.0') and LooseVersion(sys.version) < LooseVersion('3.9.0'):
+        if sys.version_info >= (3, 7) and sys.version_info < (3, 9):
             self.assertEqual(*self.actual_expected_contents('inspect_annotations.html', 'inspect_annotations-py37+38.html'))
         else:
             self.assertEqual(*self.actual_expected_contents('inspect_annotations.html'))
@@ -95,65 +104,41 @@ class Annotations(BaseInspectTestCase):
 
         # This should not list any internal stuff from the typing module. The
         # Generic.__new__() is gone in 3.9: https://bugs.python.org/issue39168
-        if LooseVersion(sys.version) >= LooseVersion('3.9.0'):
+        if sys.version_info >= (3, 9):
             self.assertEqual(*self.actual_expected_contents('inspect_annotations.AContainer.html'))
         else:
             self.assertEqual(*self.actual_expected_contents('inspect_annotations.AContainer.html', 'inspect_annotations.AContainer-py36-38.html'))
 
-    # https://github.com/python/cpython/pull/13394
-    @unittest.skipUnless(LooseVersion(sys.version) >= LooseVersion('3.7.4'),
-        "signature with / for pow() is not present in 3.6, "
-        "3.7.3 and below has a different docstring")
     def test_math(self):
         # From math export only pow() so we have the verification easier, and
         # in addition log() because it doesn't provide any signature metadata
         assert not hasattr(math, '__all__')
-        math.__all__ = ['pow', 'log']
-
-        self.run_python({
-            'INPUT_MODULES': [math]
-        })
-
-        del math.__all__
-        assert not hasattr(math, '__all__')
-
-        self.assertEqual(*self.actual_expected_contents('math.html'))
-
-    # https://github.com/python/cpython/pull/13394
-    @unittest.skipUnless(LooseVersion(sys.version) < LooseVersion('3.7.4') and LooseVersion(sys.version) >= LooseVersion('3.7'),
-        "signature with / for pow() is not present in 3.6, "
-        "3.7.3 and below has a different docstring")
-    def test_math373(self):
-        # From math export only pow() so we have the verification easier, and
-        # in addition log() because it doesn't provide any signature metadata
-        assert not hasattr(math, '__all__')
-        math.__all__ = ['pow', 'log']
-
-        self.run_python({
-            'INPUT_MODULES': [math]
-        })
-
-        del math.__all__
-        assert not hasattr(math, '__all__')
-
-        self.assertEqual(*self.actual_expected_contents('math.html', 'math373.html'))
-
-    @unittest.skipUnless(LooseVersion(sys.version) < LooseVersion('3.7'),
-        "docstring for log() is different in 3.7")
-    def test_math36(self):
-        # From math export only pow() so we have the verification easier, and
-        # in addition log() because it doesn't provide any signature metadata
-        assert not hasattr(math, '__all__')
         math.__all__ = ['log']
+        # signature with / for pow() is not present in 3.6 so it makes no sense
+        # to have it
+        if sys.version_info >= (3, 7):
+            math.__all__ = ['pow'] + math.__all__
 
         self.run_python({
             'INPUT_MODULES': [math]
         })
 
-        del math.__all__
-        assert not hasattr(math, '__all__')
-
-        self.assertEqual(*self.actual_expected_contents('math.html', 'math36.html'))
+        # 3.12 improves a docstring further. It got seemingly backported to
+        # 3.11.3 and 3.10.11 as well, but an actual build of 3.11.9 doesn't
+        # seem to have that, so checking this just on 3.12.
+        # https://github.com/python/cpython/pull/102049
+        if sys.version_info >= (3, 12):
+            file = 'math.html'
+        elif sys.version_info >= (3, 7, 4):
+            file = 'math39.html'
+        # 3.7.3 and below has a different docstring
+        # https://github.com/python/cpython/pull/13394
+        elif sys.version_info >= (3, 7):
+            file = 'math373.html'
+        # signature with / for pow() is not present in 3.6
+        else:
+            file = 'math36.html'
+        self.assertEqual(*self.actual_expected_contents('math.html', file))
 
 class NameMapping(BaseInspectTestCase):
     def test(self):

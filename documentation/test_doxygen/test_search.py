@@ -3,7 +3,7 @@
 #
 #   This file is part of m.css.
 #
-#   Copyright © 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#   Copyright © 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -270,7 +270,7 @@ file.h [2]
 averylongfunctionname [0]
 |                    ($
 |                     ) [1]
-0: ::aVeryLongFunctionName(const std::reference_wrapper<const std::vector<s…) [prefix=2[:12], suffix_length=53, type=FUNC] -> #a1e9a11887275938ef5541070955c9d9c
+0: ::aVeryLongFunctionName(ThisIsALongTypeForWhichIWantDoxygenToCalculateTh…) [prefix=2[:12], suffix_length=53, type=FUNC] -> #a59c56fdef398e152efce8bc46793d455
 1:  [prefix=0[:46], suffix_length=51, type=FUNC] ->
 2: File.h [type=FILE] -> File_8h.html
 (EntryType.PAGE, CssClass.SUCCESS, 'page'),

@@ -1,7 +1,7 @@
 #
 #   This file is part of m.css.
 #
-#   Copyright © 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#   Copyright © 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024
 #             Vladimír Vondruš <mosra@centrum.cz>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,12 +28,13 @@ import os
 import re
 import subprocess
 
-from distutils.version import LooseVersion
+from . import BaseTestCase, parse_version
 
-from . import BaseTestCase
+# Same as in the m.plots test case, see there for details
+_normalize_matplotlib_hashes = re.compile('([mp])[0-9a-f]{10}')
 
 def dot_version():
-    return re.match(".*version (?P<version>\d+\.\d+\.\d+).*", subprocess.check_output(['dot', '-V'], stderr=subprocess.STDOUT).decode('utf-8').strip()).group('version')
+    return re.match(r'.*version (?P<version>\d+\.\d+\.\d+).*', subprocess.check_output(['dot', '-V'], stderr=subprocess.STDOUT).decode('utf-8').strip()).group('version')
 
 class Page(BaseTestCase):
     def test(self):
@@ -83,21 +84,33 @@ class Plugins(BaseTestCase):
         })
         self.assertEqual(*self.actual_expected_contents('index.html'))
 
-        # Used to be >= 2.44.0, but 2.42.2 appears to have the same output
-        if LooseVersion(dot_version()) >= LooseVersion("2.42.2"):
+        # The damn thing adopted Chrome versioning apparently. No idea if the
+        # output changed in version 7, 8 or 9 already.
+        if parse_version(dot_version()) >= parse_version("10.0"):
             file = 'dot.html'
+        # Used to be >= 2.44.0, but 2.42.2 appears to have the same output
+        elif parse_version(dot_version()) >= parse_version("2.42.2"):
+            file = 'dot-2.html'
         else:
             file = 'dot-240.html'
         self.assertEqual(*self.actual_expected_contents('dot.html', file))
 
         # I assume this will be a MASSIVE ANNOYANCE at some point as well so
         # keeping it separate. (Yes, thank you past mosra. Very helpful.)
-        if LooseVersion(matplotlib.__version__) >= LooseVersion('3.5'):
-            self.assertEqual(*self.actual_expected_contents('plots.html'))
-        elif LooseVersion(matplotlib.__version__) >= LooseVersion('3.4'):
-            self.assertEqual(*self.actual_expected_contents('plots.html', 'plots-34.html'))
+        if parse_version(matplotlib.__version__) >= parse_version('3.6'):
+            # https://github.com/matplotlib/matplotlib/commit/1cf5a33b5b5fb07f8fd3956322b85efa0e307b18
+            file = 'plots.html'
+        elif parse_version(matplotlib.__version__) >= parse_version('3.5'):
+            file = 'plots-35.html'
         else:
-            self.assertEqual(*self.actual_expected_contents('plots.html', 'plots-32.html'))
+            file = 'plots-32.html'
+
+        # The element hashes change wildly between versions, replace them with
+        # something stable before comparison
+        plots_actual_contents, plots_expected_contents = self.actual_expected_contents('plots.html', file)
+        plots_actual_contents = _normalize_matplotlib_hashes.sub(r'\1gggggggggg', plots_actual_contents)
+        plots_expected_contents = _normalize_matplotlib_hashes.sub(r'\1gggggggggg', plots_expected_contents)
+        self.assertEqual(plots_actual_contents, plots_expected_contents)
         self.assertTrue(os.path.exists(os.path.join(self.path, 'output/tiny.png')))
 
         import fancyline
