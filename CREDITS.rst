@@ -54,6 +54,8 @@ Listing only people with code contributions, because otherwise there's too many
     improvements
 -   Rémi Marche (`@Marr11317 <https://github.com/Marr11317>`_) --- Doxygen
     theme improvements
+-   Ricardo Antunes (`RiscadoA <https://github.com/RiscadoA>`_) --- CSS
+    processing fixes
 -   Ryohei Machida (`@machida-mn <https://github.com/machida-mn>`_) ---
     proof-of-concept implementation of ``#include`` information in the Doxygen
     theme
