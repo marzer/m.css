@@ -1338,6 +1338,7 @@ def parse_desc_internal(state: State, element: ET.Element, immediate_parent: ET.
                        # Pygments knows only .vert, .frag, .geo
                        ('.glsl', 'glsl'),
                        ('.conf', 'ini'),
+                       ('.conf.cmake', 'ini'),
                        ('.xml-jinja', 'xml+jinja'),
                        ('.html-jinja', 'html+jinja'),
                        ('.jinja', 'jinja'),
