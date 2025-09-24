@@ -65,12 +65,26 @@ default_params = {
 }
 
 libgs = find_library('gs')
+if not libgs and hasattr(os.environ, 'LIBGS'):
+    libgs = str(getattr(os.environ, 'LIBGS'))
+    if not os.path.exists(libgs):
+        libgs = None
 if not hasattr(os.environ, 'LIBGS') and not libgs:
     if sys.platform == 'darwin':
         # Fallback to homebrew Ghostscript on macOS
         homebrew_libgs = '/usr/local/opt/ghostscript/lib/libgs.dylib'
         if os.path.exists(homebrew_libgs):
             default_params['libgs'] = homebrew_libgs
+    if sys.platform == 'linux':
+        # On certain Linux distros find_library() may not work even though the
+        # library is in usual paths. Try some candidates before failing hard.
+        for linux_libgs in [
+            '/usr/lib/libgs.so.10',
+            '/usr/lib/{}-linux-gnu/libgs.so.10'.format(os.uname().machine)
+        ]:
+            if os.path.exists(linux_libgs):
+                default_params['libgs'] = linux_libgs
+                break
     if not default_params['libgs']:
         print('Warning: libgs not found')
 # dvisvgm < 3.0 only looks for ghostscript < 10 on its own, attempt to supply
