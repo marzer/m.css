@@ -7,18 +7,21 @@
               <div class="m-doc-template">
                 {% if compound.templates != None %}
                 {% set j = joiner(', ') %}
-                template&lt;{% for t in compound.templates %}{{ j() }}{{ t.type }} {% if t.name %}{{ t.name }}{% else %}_{{ loop.index }}{% endif %}{% endfor %}&gt;
+                <span class="m-doc-template-parent">template&nbsp;&lt;<span class="m-doc-template-params{% if compound.templates|length >= 3 %} m-doc-template-long{% endif %}">{% for t in compound.templates %}{{ j() }}<span class="m-doc-template-param">{{ t.type }} {% if t.name %}{{ t.name }}{% else %}_{{ loop.index }}{% endif %}</span>{% endfor %}</span>&gt;</span>
+                {% endif %}
+                {% if compound.templates != None and typedef.templates != None %}
+                <br>
                 {% endif %}
                 {% if typedef.templates != None %}
                 {% set j = joiner(', ') %}
-                template&lt;{% for t in typedef.templates %}{{ j() }}{{ t.type }}{% if t.name %} {{ t.name }}{% endif %}{% if t.default %} = {{ t.default }}{% endif %}{% endfor %}&gt;
+                template&nbsp;&lt;<span class="m-doc-template-params{% if typedef.templates|length >= 3 %} m-doc-template-long{% endif %}">{% for t in typedef.templates %}{{ j() }}<span class="m-doc-template-param">{{ t.type }}{% if t.name %} {{ t.name }}{% endif %}{% if t.default %} = {{ t.default }}{% endif %}</span>{% endfor %}</span>&gt;
                 {% endif %}
               </div>
               {% endif %}
               {% if typedef.is_using %}
-              using {{ prefix }}<a href="#{{ typedef.id }}" class="m-doc-self">{{ typedef.name }}</a> = {{ typedef.type }}{{ typedef.args }}{% if typedef.is_protected %} <span class="m-label m-warning">protected</span>{% endif %}{% if typedef.since %} {{ typedef.since }}{% endif %}
+              using <span class="m-doc-details-prefix">{{ prefix }}</span><a href="#{{ typedef.id }}" class="m-doc-self">{{ typedef.name }}</a> = {{ typedef.type }}{{ typedef.args }}{% if typedef.is_protected %} <span class="m-label m-warning">protected</span>{% endif %}{% if typedef.since %} {{ typedef.since }}{% endif %}
               {% else %}
-              typedef {{ typedef.type }}{% if not typedef.args %} {% endif %}{{ prefix }}<a href="#{{ typedef.id }}" class="m-doc-self">{{ typedef.name }}</a>{{ typedef.args }}{% if typedef.is_protected %} <span class="m-label m-warning">protected</span>{% endif %}{% if typedef.since %} {{ typedef.since }}{% endif %}
+              typedef {{ typedef.type }}{% if not typedef.args %} {% endif %}<span class="m-doc-details-prefix">{{ prefix }}</span><a href="#{{ typedef.id }}" class="m-doc-self">{{ typedef.name }}</a>{{ typedef.args }}{% if typedef.is_protected %} <span class="m-label m-warning">protected</span>{% endif %}{% if typedef.since %} {{ typedef.since }}{% endif %}
               {% endif %}
               {# the empty line has to be here to prevent the lines from merging #}
 
